@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, simpledialog
 import logging
 
 # ログの設定
@@ -40,25 +40,37 @@ def search_parameters_in_files(directory, voltages, flow_rates, distances):
 def select_directory():
     directory = filedialog.askdirectory()
     if directory:
-        logging.info(f"Selected directory: {directory}")
-        matching_files = search_parameters_in_files(directory, voltages, flow_rates, distances)
-        if matching_files:
-            print("指定したパラメータが含まれているファイル:")
-            for file, params in matching_files.items():
-                print(f"ファイル: {file} に以下のパラメータが含まれています:")
-                for param in params:
-                    print(f"  - {param}")
-        else:
-            print("指定したパラメータが含まれているファイルは見つかりませんでした。")
-        logging.info("Search completed.")
+        process_directory(directory)
+
+def enter_directory():
+    directory = simpledialog.askstring("Input", "ディレクトリのパスを入力してください:")
+    if directory:
+        process_directory(directory)
+
+def process_directory(directory):
+    logging.info(f"Selected directory: {directory}")
+    matching_files = search_parameters_in_files(directory, voltages, flow_rates, distances)
+    if matching_files:
+        print("指定したパラメータが含まれているファイル:")
+        for file, params in matching_files.items():
+            print(f"ファイル: {file} に以下のパラメータが含まれています:")
+            for param in params:
+                print(f"  - {param}")
     else:
-        logging.warning("No directory selected.")
+        print("指定したパラメータが含まれているファイルは見つかりませんでした。")
+    logging.info("Search completed.")
 
 # GUIの設定
 root = tk.Tk()
 root.title("PL3 Parameter Searcher")
 
-select_button = tk.Button(root, text="ディレクトリを選択", command=select_directory)
-select_button.pack(pady=20)
+label = tk.Label(root, text="ディレクトリの選択方法を選んでください。")
+label.pack(pady=10)
+
+select_button = tk.Button(root, text="GUIでディレクトリを選択", command=select_directory)
+select_button.pack(pady=5)
+
+enter_button = tk.Button(root, text="文字列でディレクトリを入力", command=enter_directory)
+enter_button.pack(pady=5)
 
 root.mainloop()
