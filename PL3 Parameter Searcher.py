@@ -10,7 +10,7 @@ logging.basicConfig(filename='PL3_Parameter_Searcher.log', level=logging.INFO,
 # 検索するパラメータとその値
 voltages = ["40", "60", "80", "100"]
 flow_rates = ["2", "5", "8"]
-distances = ["0", "30", "50", "100", "140", "なし"]
+distances = ["0", "30", "50", "100", "140"]
 
 def search_parameters_in_files(directory, voltages, flow_rates, distances):
     results = {}
