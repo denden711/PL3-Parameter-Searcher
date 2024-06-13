@@ -1,16 +1,16 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, simpledialog
+from tkinter import filedialog
 import logging
 
-# ログの設定
+# ログの設定（エンコーディングを utf-8 に設定）
 logging.basicConfig(filename='PL3_Parameter_Searcher.log', level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(levelname)s - %(message)s', encoding='utf-8')
 
 # 検索するパラメータとその値
 voltages = ["40", "60", "80", "100"]
 flow_rates = ["2", "5", "8"]
-distances = ["0", "30", "50", "100", "140"]
+distances = ["0", "30", "50", "100", "140", "140_2"]
 
 def search_parameters_in_files(directory, voltages, flow_rates, distances):
     results = {}
@@ -22,18 +22,29 @@ def search_parameters_in_files(directory, voltages, flow_rates, distances):
                 try:
                     with open(file_path, 'rb') as f:
                         file_data = f.read()
-                        matches = []
+                        matches = {}
                         for voltage in voltages:
                             for flow_rate in flow_rates:
                                 for distance in distances:
-                                    search_string = f'V={voltage}\\F={flow_rate}\\x2={distance}\\'
-                                    if search_string.encode() in file_data:
-                                        matches.append(search_string)
+                                    # 検索文字列を作成
+                                    search_strings = [
+                                        f'V={voltage}\\F={flow_rate}\\x2={distance}\\',
+                                        f'V={voltage}\\F={flow_rate}\\x0={distance}\\'
+                                    ]
+                                    # 各検索文字列をファイルデータ内で検索
+                                    for search_string in search_strings:
+                                        count = file_data.count(search_string.encode())
+                                        if count > 0:
+                                            if search_string in matches:
+                                                matches[search_string] += count
+                                            else:
+                                                matches[search_string] = count
                         if matches:
                             results[file_path] = matches
                             logging.info(f"File {file_path} matches found: {matches}")
                 except Exception as e:
                     logging.error(f"Error reading file {file_path}: {e}")
+                    print(f"Error reading file {file_path}: {e}")
     
     return results
 
@@ -42,35 +53,31 @@ def select_directory():
     if directory:
         process_directory(directory)
 
-def enter_directory():
-    directory = simpledialog.askstring("Input", "ディレクトリのパスを入力してください:")
-    if directory:
-        process_directory(directory)
-
 def process_directory(directory):
-    logging.info(f"Selected directory: {directory}")
-    matching_files = search_parameters_in_files(directory, voltages, flow_rates, distances)
-    if matching_files:
-        print("指定したパラメータが含まれているファイル:")
-        for file, params in matching_files.items():
-            print(f"ファイル: {file} に以下のパラメータが含まれています:")
-            for param in params:
-                print(f"  - {param}")
-    else:
-        print("指定したパラメータが含まれているファイルは見つかりませんでした。")
-    logging.info("Search completed.")
+    try:
+        logging.info(f"Selected directory: {directory}")
+        matching_files = search_parameters_in_files(directory, voltages, flow_rates, distances)
+        if matching_files:
+            print("指定したパラメータが含まれているファイル:")
+            for file, params in matching_files.items():
+                print(f"ファイル: {file} に以下のパラメータが含まれています:")
+                for param, count in params.items():
+                    print(f"  - {param} : {count}回")
+        else:
+            print("指定したパラメータが含まれているファイルは見つかりませんでした。")
+        logging.info("Search completed.")
+    except Exception as e:
+        logging.error(f"Error processing directory {directory}: {e}")
+        print(f"Error processing directory {directory}: {e}")
 
 # GUIの設定
 root = tk.Tk()
 root.title("PL3 Parameter Searcher")
 
-label = tk.Label(root, text="ディレクトリの選択方法を選んでください。")
+label = tk.Label(root, text="ディレクトリを選択してください。")
 label.pack(pady=10)
 
-select_button = tk.Button(root, text="GUIでディレクトリを選択", command=select_directory)
+select_button = tk.Button(root, text="ディレクトリを選択", command=select_directory)
 select_button.pack(pady=5)
-
-enter_button = tk.Button(root, text="文字列でディレクトリを入力", command=enter_directory)
-enter_button.pack(pady=5)
 
 root.mainloop()
